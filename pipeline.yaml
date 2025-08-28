@@ -31,8 +31,6 @@ spec:
     params:
     - name: url
       value: $(params.git-url)
-    - name: subdirectory
-      value: ""
     - name: deleteExisting
       value: "true"
     - name: revision
@@ -74,4 +72,5 @@ spec:
     - name: IMAGE
       value: $(params.IMAGE)
     runAfter:
+
     - apply-manifests
