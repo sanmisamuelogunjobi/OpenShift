@@ -1,0 +1,83 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+   name: build-and-deploy
+spec:
+   workspaces:
+      - name: shared-workspace
+   params:
+      - name: deployment-name
+        type: string
+        description: Deployment to patch (e.g., vote-ui or vote-api)
+      - name: git-url
+        type: string
+        description: Git repository URL
+      - name: git-revision
+        type: string
+        description: Git revision (branch, tag, or SHA)
+        default: main
+      - name: IMAGE
+        type: string
+        description: Target image (e.g., image-registry.openshift-image-registry.svc:5000/pipelines-tutorial/vote-ui:latest)
+   tasks:
+      - name: fetch-repository
+        taskRef:
+           resolver: cluster
+           params:
+              - name: kind
+                value: task
+              - name: name
+                value: git-clone
+              - name: namespace
+                value: openshift-pipelines
+        workspaces:
+           - name: output
+             workspace: shared-workspace
+        params:
+           - name: URL
+             value: $(params.git-url)
+           - name: REVISION
+             value: $(params.git-revision)
+           - name: SUBDIRECTORY
+             value: ""
+           - name: DELETE_EXISTING
+             value: "true"
+
+      - name: build-image
+        runAfter:
+           - fetch-repository
+        taskRef:
+           resolver: cluster
+           params:
+              - name: kind
+                value: task
+              - name: name
+                value: buildah
+              - name: namespace
+                value: openshift-pipelines
+        params:
+           - name: IMAGE
+             value: $(params.IMAGE)
+        workspaces:
+           - name: source
+             workspace: shared-workspace
+
+      - name: apply-manifests
+        runAfter:
+           - build-image
+        taskRef:
+           name: apply-manifests
+        workspaces:
+           - name: source
+             workspace: shared-workspace
+
+      - name: update-deployment
+        runAfter:
+           - apply-manifests
+        taskRef:
+           name: update-deployment
+        params:
+           - name: deployment
+             value: $(params.deployment-name)
+           - name: IMAGE
+             value: $(params.IMAGE)
