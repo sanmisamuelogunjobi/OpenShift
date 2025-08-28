@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: buildah
+  namespace: pipelines-tutorial
+spec:
+  params:
+    - name: IMAGE
+      type: string
+  workspaces:
+    - name: source
+  steps:
+    - name: build
+      image: quay.io/buildah/stable:latest
+      securityContext:
+        privileged: true
+      script: |
+        buildah bud --tls-verify=false -f $(workspaces.source.path)/Dockerfile -t $(params.IMAGE) $(workspaces.source.path)
+        buildah push --tls-verify=false $(params.IMAGE)

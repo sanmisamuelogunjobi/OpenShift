@@ -1,0 +1,56 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: build-and-deploy-pipeline
+  namespace: pipelines-tutorial
+spec:
+  params:
+    - name: repo-url
+      type: string
+      description: Git repository URL
+    - name: image-url
+      type: string
+      description: Target image URL (with registry)
+
+  workspaces:
+    - name: shared-workspace
+
+  tasks:
+    - name: fetch-repository
+      taskRef:
+        apiVersion: tekton.dev/v1beta1
+        kind: Task
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: deleteExisting
+          value: "true"
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+
+    - name: build-image
+      runAfter:
+        - fetch-repository
+      taskRef:
+        apiVersion: tekton.dev/v1beta1
+        kind: Task
+        name: buildah
+      params:
+        - name: IMAGE
+          value: $(params.image-url)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: deploy
+      runAfter:
+        - build-image
+      taskRef:
+        apiVersion: tekton.dev/v1beta1
+        kind: Task
+        name: apply-manifests
+      workspaces:
+        - name: source
+          workspace: shared-workspace

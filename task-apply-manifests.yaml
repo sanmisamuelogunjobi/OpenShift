@@ -1,0 +1,13 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: apply-manifests
+  namespace: pipelines-tutorial
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: kubectl-apply
+      image: bitnami/kubectl:latest
+      script: |
+        kubectl apply -f $(workspaces.source.path)/k8s
