@@ -1,0 +1,22 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: apply-manifests
+spec:
+  workspaces:
+    - name: source
+  params:
+    - name: manifest_dir
+      description: Directory in the repo containing Kubernetes/OpenShift manifests
+      type: string
+      default: k8s
+  steps:
+    - name: apply
+      # OpenShift oc client image available on every cluster
+      image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+      workingDir: /workspace/source
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "Applying manifests from: $(params.manifest_dir)"
+        oc apply -f "$(params.manifest_dir)"

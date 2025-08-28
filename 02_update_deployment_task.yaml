@@ -1,0 +1,20 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: update-deployment
+spec:
+  params:
+    - name: deployment
+      description: Name of the Kubernetes Deployment to patch
+      type: string
+    - name: IMAGE
+      description: Fully-qualified image reference to deploy
+      type: string
+  steps:
+    - name: patch
+      image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "Patching deployment $(params.deployment) to use image $(params.IMAGE)"
+        oc set image deployment/$(params.deployment) *=$(params.IMAGE) --record=true
